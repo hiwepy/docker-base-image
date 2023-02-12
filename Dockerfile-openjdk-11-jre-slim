@@ -1,0 +1,36 @@
+#FROM reg.hiwepy.com/base-image/openjdk-pinpont:1
+#FROM reg.hiwepy.com/base-image/openjdk-8-shanghai:alpine
+#FROM openjdk:8-jdk-alpine
+#FROM openjdk:8-jdk-oracle
+#FROM openjdk:8-jdk-slim
+#FROM openjdk:8-jre-alpine
+#FROM openjdk:8-jre-slim
+#FROM openjdk:11-jdk-alpine
+#FROM openjdk:11-jdk-oracle
+#FROM openjdk:11-jdk-slim
+#FROM openjdk:11-jre-alpine
+#FROM openjdk:11-jre-slim
+
+FROM openjdk:11-jre-slim
+
+RUN echo "https://mirrors.aliyun.com/alpine/v3.9/main/" > /etc/apk/repositories
+RUN echo "https://mirrors.aliyun.com/alpine/v3.9/community/" >> /etc/apk/repositories
+#RUN echo "https://mirror.tuna.tsinghua.edu.cn/alpine/v3.9/main/" > /etc/apk/repositories
+
+# 把 Arthas 安装到基础镜像里 https://arthas.aliyun.com/doc/docker.html
+COPY --from=hengyunabc/arthas:latest /opt/arthas /opt/arthas
+	
+ADD skywalking-agent /skywalking/agent
+
+# 修改时区
+ENV TZ=Asia/Shanghai
+#RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezon
+RUN apk update \
+    && apk add --no-cache bash curl ttf-dejavu ttf-freefont ospd-netstat fontconfig tini jq tzdata \
+    && fc-cache --force \
+    && ln -sf /usr/share/zoneinfo/${TZ} /etc/localtime \
+    && echo "${TZ}" > /etc/timezone \
+    && rm /var/cache/apk/*
+
+# 挂着启动脚本
+ENTRYPOINT ["/sbin/tini", "--"]
